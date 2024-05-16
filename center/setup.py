@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
         	"publisher_dection_boxes=center.publisher_dection_boxes:main",
+        	"strategy=center.strategy:main",
         
         
         ],

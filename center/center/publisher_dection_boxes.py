@@ -1,42 +1,56 @@
-import cv2
 import rclpy
-import numpy as np
-import pyrealsense2 as rs
 from rclpy.node import Node
 from detect_interface.msg import DetectionResults, BoundingBox
-from std_msgs.msg import String  # 使用標準消息類型，或根據需要自定義
+from std_msgs.msg import Float64MultiArray, MultiArrayLayout, MultiArrayDimension, String
+import numpy as np 
 
 class BoxPublisher(Node):
     def __init__(self):
         super().__init__('box_publisher')
-        self.subscription = self.create_subscription(DetectionResults,'/detect/objs',self.detection_callback,10)
-        self.publisher = self.create_publisher(String, 'center_data', 10)  # 增加一個發布者
+        self.subscription = self.create_subscription(DetectionResults, '/detect/objs', self.detection_callback, 10)
+        self.publisher_coords = self.create_publisher(Float64MultiArray, 'center_data_coords', 10)
+        self.publisher_labels = self.create_publisher(String, 'center_data_labels', 10)
+        self.label_order = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'white']  # 定義標籤排序
         self.get_logger().info('BoxPublisher has been started and is subscribing and publishing.')
 
     def detection_callback(self, msg):
-        #記錄一條信息，表收到檢測結果。
         self.get_logger().info('Received detection results')
-        #使用for循環:每個檢測到的物體。
-        for label, score, bbox in zip(msg.labels, msg.scores, msg.bounding_boxes):
-            # 計算 BoundingBox 的中心點
-            center_x = (bbox.xmin + bbox.xmax) / 2
-            center_y = (bbox.ymin + bbox.ymax) / 2
-            #僅發布中心點
-            center_data = f'Center of {label}: ({center_x:.2f}, {center_y:.2f})'
-            self.publisher.publish(String(data=center_data))  # 發布處理後的數據
-            self.get_logger().info(f'Published: {center_data}')
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-             return
-        
+        # 初始化 Float64MultiArray
+        center_array = Float64MultiArray()
+        center_array.layout.dim.append(MultiArrayDimension(label='centers', size=2, stride=2))
+        center_array.layout.data_offset = 0
+
+        # 使用字典收集每個標籤的中心點，以保持排序
+        detected_objects = {label: [] for label in self.label_order}
+
+        # 收集數據
+        for label, bbox in zip(msg.labels, msg.bounding_boxes):
+            if label in detected_objects:
+                center_x = (bbox.xmin + bbox.xmax) / 2
+                center_y = (bbox.ymin + bbox.ymax) / 2
+                print("label:", label)
+                detected_objects[label].append([center_x, center_y])
+
+        # 按標籤順序整理並發布中心點數據
+        for label in self.label_order:
+            for center in detected_objects.get(label, []):
+                center_array.data.extend(center)
+                label_msg = String()
+                label_msg.data = label
+                self.publisher_labels.publish(label_msg)
+                self.get_logger().info(f'Label: {label}, Center: ({center[0]:.2f}, {center[1]:.2f})')
+
+        # 發布中心點數據
+        self.publisher_coords.publish(center_array)
+        self.get_logger().info('Published center data')
+
 def main(args=None):
     rclpy.init(args=args)
     node = BoxPublisher()
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
-    # # Stop streaming
-    # pipeline.stop()
 
 if __name__ == '__main__':
     main()
