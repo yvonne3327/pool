@@ -1,0 +1,17 @@
+#open camera:
+$ros2 launch realsense2_camera rs_launch.py
+not sure:$ros2 launch realsense2_camera rs_launch.py depth_module.depth_profile:=1280x720x30 pointcloud.enable:=true
+
+#run yolov7:
+$ ros2 launch yolov7_obj_detect object_detection_launch.py 
+
+#run center
+$ ros2 run center publisher_dection_boxes
+
+colcon build --packages-select detect_interface
+colcon build --symlink-install
+
+
+#sherch topic:
+ros2 topic list
+ros2 topic info [topic name
