@@ -1,22 +1,18 @@
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray, String
+import tableball
+import paygame
+import sys
+from threading import Thread
+
 
 class BoxSubscriber(Node):
     def __init__(self):
         super().__init__('box_subscriber')
-        self.subscription_coords = self.create_subscription(
-            Float64MultiArray,
-            'center_data_coords',
-            self.coords_callback,
-            10
-        )
-        self.subscription_labels = self.create_subscription(
-            String,
-            'center_data_labels',
-            self.labels_callback,
-            10
-        )
+        self.subscription_coords = self.create_subscription(Float64MultiArray, 'center_data_coords',
+                                                             self.coords_callback, 10)
+        self.subscription_labels = self.create_subscription(String, 'center_data_labels', self.labels_callback, 10)
         self.coords_data = []
         self.labels_data = []
         self.label_order = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'white']
@@ -48,12 +44,47 @@ class BoxSubscriber(Node):
             self.coords_data = []
             self.labels_data = []
 
+
+class TableBallNode(Node):
+    def __init__(self):
+        super().__init__('tableball_node')
+        self.initialize_pygame()
+        self.timer = self.create_timer(0.1, self.update_game)  # 10 Hz game update
+
+    def initialize_pygame(self):
+        tableball.init()
+        self.width, self.height = 1000, 500
+        self.screen = tableball.display.set_mode((self.width, self.height))
+        tableball.display.set_caption("Table Ball")
+
+    def update_game(self):
+        for event in tableball.event.get():
+            if event.type == tableball.QUIT:
+                tableball.quit()
+                sys.exit()
+            # Add more event handling here
+
+        # Update game logic here
+        self.screen.fill((255, 255, 255))  # Fill screen with white
+        tableball.display.flip()  # Update display
+
+
+def start_ros_node(node):
+    rclpy.spin(node)
+
+
 def main(args=None):
     rclpy.init(args=args)
-    node = BoxSubscriber()
-    rclpy.spin(node)
-    node.destroy_node()
+    box_subscriber_node = BoxSubscriber()
+    table_ball_node = TableBallNode()
+    ros_thread1 = Thread(target=start_ros_node, args=(box_subscriber_node,))
+    ros_thread2 = Thread(target=start_ros_node, args=(table_ball_node,))
+    ros_thread1.start()
+    ros_thread2.start()
+    ros_thread1.join()
+    ros_thread2.join()
     rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()
