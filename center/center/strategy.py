@@ -1,71 +1,65 @@
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Float64MultiArray
-import tableball
 import sys
-from threading import Thread
+import center.tableball as table
 
+# from . import tableball as table  # Adjust this import based on your file structure
+# import pygame as pg
 
 class BoxSubscriber(Node):
-    def __init__(self, game):
-        super().__init__('pygame_node')
-        self.subscription_coords = self.create_subscription(Float64MultiArray, 'center_data_coords', self.coords_callback, 10)
-        self.game = game
-
-    def coords_callback(self, msg):
-        # 在这里处理从 'center_data_coords' 主题接收到的数据
-        coords_data = msg.data
-        # 将接收到的参数传递给 TableBall 游戏
-        self.game.update_ball_position(coords_data)
-
-
-class TableBallNode(Node):
     def __init__(self):
-        super().__init__('tableball_node')
-        self.initialize_pygame()
-        self.timer = self.create_timer(0.1, self.update_game)  # 10 Hz game update
+        super().__init__('pygame_node')
+        self.subscription = self.create_subscription(Float64MultiArray, 'center_data_coords', self.strategy_callback, 10)
+        self.publisher_hitpoint = self.create_publisher(Float64MultiArray, 'strategy_hitpoint', 10)
+        self.get_logger().info('BoxSubscriber has been started and is subscribing to data.')
+        self.max=0
+        self.all_10_data = []
+        self.return_value=[]
+    def strategy_callback(self, msg):
+        # self.get_logger().info(f'Received coordinates: {msg.data}')
+        temp_max = 0
+        data_flag=0
+        if self.max==5:
+            max_data = []
+            for data in self.all_10_data:
+                if len(data) > temp_max:
+                    temp_max = len(data)
+                    max_data = data
+            self.max = 0
+            data_flag=1
+            self.get_logger().info(f'max_data: {max_data}')
 
-    def initialize_pygame(self):
-        tableball.init()
-        self.width, self.height = 1000, 500
-        self.screen = tableball.display.set_mode((self.width, self.height))
-        tableball.display.set_caption("Table Ball")
+        else:
+            self.max+=1
+            self.all_10_data.append(msg.data)
+        #[0,2,3,6,5,7]
+        ballx_set=[]
+        bally_set=[]
+        if data_flag==1:
+            for i in range(len(max_data)):
+                if i%2==0:
+                    ballx_set.append(max_data[i])
+                else:
+                    bally_set.append(max_data[i])
+            ballcount=int((len(max_data)-2)/2)
+            cuex=ballx_set[-1]
+            cuey=bally_set[-1]
 
-    def update_game(self):
-        for event in tableball.event.get():
-            if event.type == tableball.QUIT:
-                tableball.quit()
-                sys.exit()
-            # Add more event handling here
+            self.return_value=table.main(ballx_set, bally_set, ballcount, cuex, cuey)
+            self.get_logger().info(f'maxaaa: {self.return_value}')
+            data_flag=0
 
-        # Update game logic here
-        # 可以在这里使用接收到的参数来更新游戏逻辑
-
-
-def start_ros_node(node):
-    rclpy.spin(node)
-
+            # # 發布中心點數據
+            # self.publisher_hitpoint.publish(self.return_value)
+            # self.get_logger().info('hitpoint_success')
 
 def main(args=None):
     rclpy.init(args=args)
-    tableball_node = TableBallNode()
-
-    # 启动 TableBall 节点的 ROS 运行循环
-    ros_thread = Thread(target=start_ros_node, args=(tableball_node,))
-    ros_thread.start()
-
-    # 创建 BoxSubscriber 节点并传递 TableBallNode 的实例
-    pygame_node = BoxSubscriber(tableball_node)
-
-    try:
-        rclpy.spin(pygame_node)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        pygame_node.destroy_node()
-        tableball_node.destroy_node()
-        rclpy.shutdown()
-
+    node = BoxSubscriber()
+    rclpy.spin(node)
+    node.destroy_node()
+    rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

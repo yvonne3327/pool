@@ -41,6 +41,8 @@ class BoxPublisher(Node):
                 self.publisher_labels.publish(label_msg)
                 self.get_logger().info(f'Label: {label}, Center: ({center[0]:.2f}, {center[1]:.2f})')
 
+
+       
         # 發布中心點數據
         self.publisher_coords.publish(center_array)
         self.get_logger().info('Published center data')
