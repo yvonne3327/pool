@@ -4,6 +4,7 @@ tf
 dynamixel_sdk
 pynput
 setuptools==58.2
+pygame
 
 # yolov7 dep
 tqdm

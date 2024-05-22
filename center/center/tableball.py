@@ -2,6 +2,8 @@ import random
 import math
 import pygame as pg
 import sys
+import numpy as np
+
 #inital condition
 actual_width = 62.7
 actual_height = 30.4
@@ -168,7 +170,7 @@ def main1(cuex, cuey, objx, objy, hitpointxs, hitpointys, values1, ballcount, ba
                 finalobsx.append(px)
                 finalobsy.append(py)
         final(max_non_positive_score, bestvx, bestvy, routeobs, bestx, besty)
-        return max_non_positive_score, bestvx, bestvy, routeobs, bestx, besty
+        return [max_non_positive_score, bestvx, bestvy, routeobs, bestx, besty]
     else:
         return main2(cuex, cuey, objx, objy, hitpointxs, hitpointys, ballx_set, bally_set, ballcount)
 
@@ -269,8 +271,8 @@ def main2(cuex, cuey, objx, objy, hitpointxs, hitpointys, ballx_set, bally_set, 
             if px > 0:
                 finalobsx.append(px)
                 finalobsy.append(py)
-        return bestscore, bestvx, bestvy, countobs, final_hitpointx, final_hitpointy
-    return 0, 0, 0, 0, 0, 0
+        return [bestscore, bestvx, bestvy, countobs, final_hitpointx, final_hitpointy]
+    return [0, 0, 0, 0, 0, 0]
 
 def vector_angle(n1x, n1y, n2x, n2y, n3x, n3y):
     vx1, vy1 = n2x - n1x, n2y - n1y
