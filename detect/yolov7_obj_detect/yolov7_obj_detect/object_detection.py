@@ -147,9 +147,11 @@ class ObjectDetection(Node):
         self.get_logger().info(f"Detection completed in {t2 - t1:.3f} seconds (NMS: {t3 - t2:.3f} seconds)")
 
         if self.show_img:
-            cv2.imshow("YOLOv7 Object detection result RGB", cv2.resize(im0, None, fx=1.5, fy=1.5))
+            cv2.imshow("YOLOv7 Object detection result RGB", cv2.resize(im0, None, fx=0.5, fy=0.5))
             if cv2.waitKey(1) & 0xFF == ord('q'):
+                cv2.destroyAllWindows("YOLOv7 Object detection result RGB")
                 rclpy.shutdown()  # Stop the ROS 2 event loop
+                
 
 def main(args=None):
     """Run the main function."""

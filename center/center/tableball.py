@@ -13,8 +13,8 @@ height = 304
 radius = int(1.6 / actual_height * height)
 hole_radius = int(width / actual_width * 2)
 # Table coordinates
-x1 = 100
-y1 = 100
+x1 = -267.364
+y1 = 592.533
 hole_positions = [(x1, y1), (x1 + width // 2, y1), (x1 + width, y1),
                   (x1, y1 + height), (x1 + width // 2, y1 + height), (x1 + width, y1 + height)]
 
